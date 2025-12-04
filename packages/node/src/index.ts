@@ -59,7 +59,6 @@ export interface VerificationResponse {
  */
 export interface QuantumAuthContext {
     userId: string;
-    deviceId: string;
     payload: unknown;
 }
 
@@ -177,7 +176,6 @@ export function createExpressQuantumAuthMiddleware(
             // Extract only QuantumAuth-related headers to send to QA server
             const incomingHeaders: Record<string, string> = {};
             const rawHeaders = req.headers || {};
-            console.log(rawHeaders)
 
             for (const [key, value] of Object.entries(rawHeaders)) {
                 if (!value) continue;
@@ -203,7 +201,9 @@ export function createExpressQuantumAuthMiddleware(
 
             const result = await verifyRequestWithServer(cfg, verifyPayload);
 
-            if (!result.authenticated || !result.userId || !result.deviceId) {
+            console.log("result", result)
+
+            if (!result.authenticated || !result.userId) {
                 res.status(401).json({
                     error: result.error ?? "QuantumAuth authentication failed",
                 });
@@ -213,7 +213,6 @@ export function createExpressQuantumAuthMiddleware(
             // Attach context + decrypted payload to req
             const ctx: QuantumAuthContext = {
                 userId: result.userId,
-                deviceId: result.deviceId,
                 payload: result.payload,
             };
 

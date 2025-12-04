@@ -61,7 +61,6 @@ function createExpressQuantumAuthMiddleware(cfg) {
       const path = req.originalUrl || req.url || "";
       const incomingHeaders = {};
       const rawHeaders = req.headers || {};
-      console.log(rawHeaders);
       for (const [key, value] of Object.entries(rawHeaders)) {
         if (!value) continue;
         const lower = key.toLowerCase();
@@ -76,7 +75,8 @@ function createExpressQuantumAuthMiddleware(cfg) {
         encrypted
       };
       const result = await verifyRequestWithServer(cfg, verifyPayload);
-      if (!result.authenticated || !result.userId || !result.deviceId) {
+      console.log("result", result);
+      if (!result.authenticated || !result.userId) {
         res.status(401).json({
           error: result.error ?? "QuantumAuth authentication failed"
         });
@@ -84,7 +84,6 @@ function createExpressQuantumAuthMiddleware(cfg) {
       }
       const ctx = {
         userId: result.userId,
-        deviceId: result.deviceId,
         payload: result.payload
       };
       req.quantumAuth = ctx;

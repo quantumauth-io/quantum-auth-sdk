@@ -50,7 +50,6 @@ interface VerificationResponse {
  */
 interface QuantumAuthContext {
     userId: string;
-    deviceId: string;
     payload: unknown;
 }
 /**

@@ -19,6 +19,7 @@ app.use(cors({
         "X-QuantumAuth-Nonce",
         "X-QuantumAuth-Challenge-ID",
         "X-QuantumAuth-Encrypted",
+        "X-QuantumAuth-Canonical-B64"
     ],
     credentials: true,
 }));
@@ -45,7 +46,6 @@ app.post("/secure/data", qaMiddleware, (req, res) => {
     res.json({
         authenticated: true,
         userId: qa.userId,
-        deviceId: qa.deviceId,
         decryptedBody: qa.payload
     });
 });
@@ -57,7 +57,6 @@ app.post("/qa/demo", qaMiddleware, (req: any, res) => {
     res.json({
         authenticated: true,
         userId: qa.userId,
-        deviceId: qa.deviceId,
         body: req.body, // plain JSON body from frontend
     });
 });
