@@ -1,0 +1,6 @@
+/.idea/
+/apps/next-demo/node_modules/
+/node_modules/
+/packages/node/node_modules/
+/packages/web/node_modules/
+/apps/express-demo/node_modules/
