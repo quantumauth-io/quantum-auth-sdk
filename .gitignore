@@ -4,3 +4,4 @@
 /packages/node/node_modules/
 /packages/web/node_modules/
 /apps/express-demo/node_modules/
+.next
