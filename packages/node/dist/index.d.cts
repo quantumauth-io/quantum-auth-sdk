@@ -41,7 +41,6 @@ interface VerificationRequestPayload {
 interface VerificationResponse {
     authenticated: boolean;
     userId?: string;
-    deviceId?: string;
     payload?: unknown;
     error?: string;
 }

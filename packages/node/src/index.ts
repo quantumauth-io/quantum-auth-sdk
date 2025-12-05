@@ -49,7 +49,6 @@ export interface VerificationRequestPayload {
 export interface VerificationResponse {
     authenticated: boolean;
     userId?: string;
-    deviceId?: string;
     payload?: unknown; // decrypted payload
     error?: string;
 }
@@ -114,7 +113,6 @@ export async function verifyRequestWithServer(
         return {
             authenticated: !!json?.authenticated,
             userId: json?.user_id ?? json?.userId,
-            deviceId: json?.device_id ?? json?.deviceId,
             payload: json?.payload ?? json?.data,
             error: json?.error,
         };

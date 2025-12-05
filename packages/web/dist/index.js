@@ -4,7 +4,6 @@ var QuantumAuthWebClient = class {
     this.kemPubKeyPromise = null;
     this.qaClientBaseUrl = cfg.qaClientBaseUrl.replace(/\/+$/, "");
     this.backendBaseUrl = cfg.backendBaseUrl.replace(/\/+$/, "");
-    this.appId = cfg.appId;
     this.pqKem = cfg.pqKem;
     this.pqKemAlg = cfg.pqKemAlg;
     this.qaKemPublicKeyB64 = cfg.qaKemPublicKeyB64;
@@ -18,15 +17,9 @@ var QuantumAuthWebClient = class {
     });
     const url = this.backendBaseUrl + opts.path;
     const headers = new Headers({
-      "Content-Type": "application/json",
-      "X-QuantumAuth-Challenge-ID": challenge.challengeId,
-      "X-QuantumAuth-Nonce": String(challenge.nonce),
-      "X-QuantumAuth-App-ID": this.appId ?? "",
-      "X-QuantumAuth-User-ID": challenge.userId,
-      "X-QuantumAuth-Device-ID": challenge.deviceId
+      "Content-Type": "application/json"
     });
-    console.log("request headers", challenge);
-    for (const [k, v] of Object.entries(challenge.qaHeaders)) {
+    for (const [k, v] of Object.entries(challenge.qaProof)) {
       headers.set(k, v);
     }
     const resp = await fetch(url, {
@@ -57,23 +50,14 @@ var QuantumAuthWebClient = class {
       backendHost: this.extractHost(this.backendBaseUrl)
     });
     const encrypted = await this.encryptPayload({
-      challengeId: challenge.challengeId,
-      nonce: challenge.nonce,
-      appId: this.appId,
       payload: opts.body ?? {}
     });
     const url = this.backendBaseUrl + opts.path;
     const headers = new Headers({
-      "Content-Type": "application/json",
-      "X-QuantumAuth-Encrypted": "1",
-      "X-QuantumAuth-Challenge-ID": challenge.challengeId,
-      "X-QuantumAuth-Nonce": String(challenge.nonce),
-      "X-QuantumAuth-App-ID": this.appId ?? "",
-      "X-QuantumAuth-User-ID": challenge.userId,
-      "X-QuantumAuth-Device-ID": challenge.deviceId
+      "Content-Type": "application/json"
     });
     console.log("headers");
-    for (const [k, v] of Object.entries(challenge.qaHeaders)) {
+    for (const [k, v] of Object.entries(challenge.qaProof)) {
       headers.set(k, v);
     }
     const resp = await fetch(url, {
@@ -98,7 +82,7 @@ var QuantumAuthWebClient = class {
     };
   }
   async requestChallenge(params) {
-    const url = `${this.qaClientBaseUrl}/api/auth/challenge`;
+    const url = `${this.qaClientBaseUrl}/api/qa/authenticate`;
     const resp = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -115,11 +99,7 @@ var QuantumAuthWebClient = class {
     }
     const json = await resp.json();
     return {
-      challengeId: json.challenge_id,
-      nonce: json.nonce,
-      qaHeaders: json.headers ?? {},
-      userId: json.user_id,
-      deviceId: json.device_id
+      qaProof: json.headers ?? {}
     };
   }
   async encryptPayload(opts) {
@@ -127,9 +107,6 @@ var QuantumAuthWebClient = class {
     const { sharedSecret, ciphertext } = await this.pqKem.encapsulate(kemPubKey);
     const aeadKey = await this.deriveAeadKey(sharedSecret);
     const plaintextObj = {
-      challenge_id: opts.challengeId,
-      nonce: opts.nonce,
-      app_id: opts.appId,
       payload: opts.payload
     };
     const plaintext = new TextEncoder().encode(JSON.stringify(plaintextObj));
@@ -142,9 +119,6 @@ var QuantumAuthWebClient = class {
     return {
       pq_kem_alg: this.pqKemAlg,
       aead_alg: "AES-GCM-256",
-      app_id: opts.appId,
-      challenge_id: opts.challengeId,
-      nonce: opts.nonce,
       kem_ciphertext_b64: this.bytesToBase64(ciphertext),
       aead_iv_b64: this.bytesToBase64(iv),
       aead_ciphertext_b64: this.bytesToBase64(

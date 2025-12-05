@@ -38,9 +38,6 @@ interface ProtectedCallResult<T = unknown> {
 interface EncryptedPayload {
     pq_kem_alg: PqKemAlg;
     aead_alg: "AES-GCM-256";
-    app_id?: string;
-    challenge_id: string;
-    nonce: number;
     kem_ciphertext_b64: string;
     aead_iv_b64: string;
     aead_ciphertext_b64: string;
@@ -48,7 +45,6 @@ interface EncryptedPayload {
 declare class QuantumAuthWebClient {
     private readonly qaClientBaseUrl;
     private readonly backendBaseUrl;
-    private readonly appId?;
     private readonly pqKem;
     private readonly pqKemAlg;
     private readonly qaKemPublicKeyB64;

@@ -64,8 +64,6 @@ export default function HomePage() {
             const res = await qaClient.request<any, { ping: string }>({
                 method: "POST",
                 path: "/qa/demo", // Express demo route
-                userId: "78d1107b-725d-4065-a1ac-e8ba4614ef47",
-                deviceId: "579248ae-7a5e-4030-80ee-f3c7544e05f9",
                 body: { ping: "hello from next demo" },
             });
 
