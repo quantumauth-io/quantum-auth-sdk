@@ -7,7 +7,10 @@ This monorepo contains the official SDKs used to integrate QuantumAuth into web 
 
 QuantumAuth delivers device-bound identity using TPM modules, Secure Enclave, and post-quantum signatures — creating an authentication system that is invisible to users, impossible to phish, and resistant to next-generation threats.
 
-## 📦 Packages
+## Packages
+
+[![web - npm version](https://img.shields.io/npm/v/@quantumauth/web.svg?label=@quantumauth/web)](https://www.npmjs.com/package/@quantumauth/web)
+[![node - npm version](https://img.shields.io/npm/v/@quantumauth/node.svg?label=@quantumauth/node)](https://www.npmjs.com/package/@quantumauth/node)
 
 ### **@quantumauth/web**
 Client-side SDK for browsers and frameworks like Next.js.
