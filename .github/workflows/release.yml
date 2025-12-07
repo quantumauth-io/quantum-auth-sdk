@@ -26,30 +26,20 @@ jobs:
         with:
           version: 9
 
-      - name: Configure npm auth
-        run: |
-          cat <<EOF > .npmrc-auth
-          @quantumauth:registry=https://registry.npmjs.org/
-          //registry.npmjs.org/:_authToken=${NPM_TOKEN}
-          always-auth=true
-          EOF
-
-          echo "=== .npmrc-auth ==="
-          sed 's/_authToken=.*/_authToken=***REDACTED***/' .npmrc-auth
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Check npm auth
-        run: npm whoami --userconfig=.npmrc-auth
-
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
       - name: Build
         run: pnpm build
 
+      # Optional debug – you can remove later
+      - name: Check npm auth
+        run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Release with Changesets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: pnpm release
