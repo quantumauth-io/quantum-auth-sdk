@@ -26,6 +26,16 @@ jobs:
         with:
           version: 9
 
+      - name: Configure npm auth
+        run: |
+          cat <<EOF > ~/.npmrc
+          @quantumauth:registry=https://registry.npmjs.org/
+          //registry.npmjs.org/:_authToken=${NPM_TOKEN}
+          always-auth=true
+          EOF
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
