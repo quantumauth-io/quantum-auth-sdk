@@ -1,0 +1,1 @@
+export const clientURL : string  = "http://localhost:8090"  as const;

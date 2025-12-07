@@ -1,26 +1,5 @@
-type PqKemAlg = "ML-KEM-768" | "ML-KEM-1024";
-interface PqKemPublicKey {
-    alg: PqKemAlg;
-    raw: Uint8Array;
-}
-/**
- * Abstract PQ KEM interface.
- * You plug in your own implementation (WASM / JS).
- */
-interface PqKem {
-    importPublicKey(raw: Uint8Array, alg: PqKemAlg): Promise<PqKemPublicKey>;
-    encapsulate(pk: PqKemPublicKey): Promise<{
-        sharedSecret: Uint8Array;
-        ciphertext: Uint8Array;
-    }>;
-}
-
 interface QuantumAuthWebConfig {
-    qaClientBaseUrl: string;
     backendBaseUrl: string;
-    pqKemAlg: PqKemAlg;
-    qaKemPublicKeyB64: string;
-    pqKem: PqKem;
     appId?: string;
 }
 interface ProtectedCallOptions<TBody = unknown> {
@@ -35,30 +14,33 @@ interface ProtectedCallResult<T = unknown> {
     data: T | null;
     raw: Response;
 }
-interface EncryptedPayload {
-    pq_kem_alg: PqKemAlg;
-    aead_alg: "AES-GCM-256";
-    kem_ciphertext_b64: string;
-    aead_iv_b64: string;
-    aead_ciphertext_b64: string;
-}
+/**
+ * Represents a web client used for managing quantum-authenticated requests to a backend.
+ * Responsible for handling challenge-response mechanisms and ensuring secure communication.
+ */
 declare class QuantumAuthWebClient {
     private readonly qaClientBaseUrl;
     private readonly backendBaseUrl;
-    private readonly pqKem;
-    private readonly pqKemAlg;
-    private readonly qaKemPublicKeyB64;
-    private kemPubKeyPromise;
     constructor(cfg: QuantumAuthWebConfig);
     request<TResp = unknown, TBody = unknown>(opts: ProtectedCallOptions<TBody>): Promise<ProtectedCallResult<TResp>>;
-    callProtected<TResp = unknown, TBody = unknown>(opts: ProtectedCallOptions<TBody>): Promise<ProtectedCallResult<TResp>>;
+    /**
+     * Makes an asynchronous request to get a QA challenge from the qa client.
+     *
+     * @param {Object} params - The parameters required to request the challenge.
+     * @param {string} params.method - The HTTP method used in the challenge request.
+     * @param {string} params.path - The backend API path for which the challenge is requested.
+     * @param {string} params.backendHost - The backend host to authenticate with.
+     * @return {Promise<ChallengeResponse>} A promise that resolves to the challenge response, containing the required proof.
+     * @throws {Error} If the response status indicates a failure or the server returns an error.
+     */
     private requestChallenge;
-    private encryptPayload;
-    private getKemPublicKey;
-    private deriveAeadKey;
-    private base64ToBytes;
-    private bytesToBase64;
+    /**
+     * Extracts the host from the given URL string. If the URL is invalid, it attempts to manually parse and extract the host.
+     *
+     * @param {string} url - The URL string from which the host needs to be extracted.
+     * @return {string} The extracted host from the provided URL.
+     */
     private extractHost;
 }
 
-export { type EncryptedPayload, type PqKem, type PqKemAlg, type PqKemPublicKey, type ProtectedCallOptions, type ProtectedCallResult, QuantumAuthWebClient, type QuantumAuthWebConfig };
+export { type ProtectedCallOptions, type ProtectedCallResult, QuantumAuthWebClient, type QuantumAuthWebConfig };

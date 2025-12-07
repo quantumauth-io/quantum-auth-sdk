@@ -1,25 +1,18 @@
 import express from "express";
 import cors from "cors";
+
 import {
     createExpressQuantumAuthMiddleware,
-    type QuantumAuthContext
+    QUANTUMAUTH_ALLOWED_HEADERS,
 } from "@quantumauth/node";
 
 const app = express();
-// CORS for Next.js GUI on :3000
+
 app.use(cors({
-    origin: ["http://localhost:3000"],
+    origin: ["http://localhost:3000"], // address of the front end
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
-        "Content-Type",
-        "Authorization",
-        "X-QuantumAuth-App-ID",
-        "X-QuantumAuth-User-ID",
-        "X-QuantumAuth-Device-ID",
-        "X-QuantumAuth-Nonce",
-        "X-QuantumAuth-Challenge-ID",
-        "X-QuantumAuth-Encrypted",
-        "X-QuantumAuth-Canonical-B64"
+        ...QUANTUMAUTH_ALLOWED_HEADERS
     ],
     credentials: true,
 }));
@@ -27,36 +20,36 @@ app.use(cors({
 // Parse JSON
 app.use(express.json());
 
-// Configure the QA middleware
+
+/**
+ * Middleware for integrating Quantum Authentication with an Express application.
+ *
+ * This middleware is used to authenticate and authorize requests using Quantum Authentication.
+ * It enables secure communication with the Quantum backend services, providing features
+ * such as session validation and user authorization.
+ *
+ * Configuration:
+ * - `backendApiKey` (optional): Specifies the API key required to communicate with the Quantum backend.
+ *   If not provided, the service may operate in a limited or development mode.
+ *
+ * Ensure this middleware is applied to the desired routes in the Express application to enable
+ * authentication and enforce security policies as defined by the Quantum backend.
+ *
+ */
 const qaMiddleware = createExpressQuantumAuthMiddleware({
-    qaServerUrl: "http://localhost:1042", // your QA server
-    verifyPath: "/quantum-auth/v1/auth/verify", // adjust if needed
-    backendApiKey: "dev-backend-key" // optional
+    backendApiKey: "dev-backend-key" // optional for now
 });
 
-// ----------- Public health endpoint (not QA protected) -----------
+
 app.get("/health", (_req, res) => {
     res.json({ status: "ok" });
 });
 
-// ----------- Protected endpoint (requires QA) -----------
-app.post("/secure/data", qaMiddleware, (req, res) => {
-    const qa = (req as any).quantumAuth as QuantumAuthContext;
 
-    res.json({
-        authenticated: true,
-        userId: qa.userId,
-        decryptedBody: qa.payload
-    });
-});
-
-// protected endpoint using QA headers (no encrypted body)
 app.post("/qa/demo", qaMiddleware, (req: any, res) => {
-    const qa = req.quantumAuth as QuantumAuthContext;
 
     res.json({
-        authenticated: true,
-        userId: qa.userId,
+        userId: req.userId, // user id is from the middleware
         body: req.body, // plain JSON body from frontend
     });
 });

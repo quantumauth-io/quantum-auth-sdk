@@ -1,51 +1,19 @@
 // packages/node/src/index.ts
+import {QUANTUMAUTH_SERVER_URL, QUANTUMAUTH_VERIFICATION_PATH} from "./constants";
 
-/**
- * QuantumAuth Node / backend SDK
- *
- * Goal: make it trivial for a developer to protect an endpoint:
- *
- *   app.post("/api/secure", qaMiddleware, (req, res) => {
- *     // req.quantumAuth.userId, req.quantumAuth.deviceId, req.body = decrypted payload
- *   });
- */
+export * from "./constants";
 
 export interface QuantumAuthNodeConfig {
-    /** Base URL of the QuantumAuth server, e.g. "http://localhost:1042" */
-    qaServerUrl: string;
-
-    /**
-     * Path of the verification endpoint on the QuantumAuth server.
-     * You said you already have “an endpoint to verify request” – plug it here.
-     * Example: "/quantum-auth/verify-request"
-     */
-    verifyPath?: string;
-
-    /**
-     * Optional shared secret/API key between your backend and the QA server.
-     * If used, the QA server can require this in an "X-QuantumAuth-Backend-Key" header.
-     */
     backendApiKey?: string;
-
-    /** Timeout for the call to the QA server (ms). Default: 3000 */
     timeoutMs?: number;
 }
 
-/**
- * What we send from backend → QuantumAuth server to verify/decrypt.
- * This must match what the QA server expects.
- */
 export interface VerificationRequestPayload {
     method: string;
     path: string;
     headers: Record<string, string>;
-    encrypted: unknown; // the EncryptedPayload JSON received from the frontend
 }
 
-/**
- * What we expect back from the QuantumAuth server.
- * Adapt these fields to match your real endpoint’s response.
- */
 export interface VerificationResponse {
     authenticated: boolean;
     userId?: string;
@@ -53,24 +21,16 @@ export interface VerificationResponse {
     error?: string;
 }
 
-/**
- * Context attached to the Express request object on success.
- */
 export interface QuantumAuthContext {
     userId: string;
     payload: unknown;
 }
 
-/**
- * Low-level helper: verify a single request with the QuantumAuth server.
- * You can reuse this even outside Express (Fastify, etc.).
- */
 export async function verifyRequestWithServer(
     cfg: QuantumAuthNodeConfig,
     input: VerificationRequestPayload
 ): Promise<VerificationResponse> {
-    const verifyPath = cfg.verifyPath ?? "/quantum-auth/verify-request";
-    const url = joinUrl(cfg.qaServerUrl, verifyPath);
+    const url = joinUrl(QUANTUMAUTH_SERVER_URL, QUANTUMAUTH_VERIFICATION_PATH);
 
     const controller = new AbortController();
     const timeout = setTimeout(
@@ -82,6 +42,7 @@ export async function verifyRequestWithServer(
         const headers: Record<string, string> = {
             "Content-Type": "application/json",
         };
+        // for future use
         if (cfg.backendApiKey) {
             headers["X-QuantumAuth-Backend-Key"] = cfg.backendApiKey;
         }
@@ -113,8 +74,7 @@ export async function verifyRequestWithServer(
         return {
             authenticated: !!json?.authenticated,
             userId: json?.user_id ?? json?.userId,
-            payload: json?.payload ?? json?.data,
-            error: json?.error,
+            // payload: json?.payload ?? json?.data, // for future encryption
         };
     } catch (err: any) {
         return {
@@ -126,31 +86,6 @@ export async function verifyRequestWithServer(
     }
 }
 
-/**
- * Express-compatible middleware factory.
- *
- * Usage:
- *
- *   import express from "express";
- *   import { createExpressQuantumAuthMiddleware } from "@quantumauth/node";
- *
- *   const app = express();
- *   app.use(express.json()); // IMPORTANT: parse JSON body first
- *
- *   app.post(
- *     "/api/secure",
- *     createExpressQuantumAuthMiddleware({
- *       qaServerUrl: "http://localhost:1042",
- *       verifyPath: "/quantum-auth/verify-request",
- *       backendApiKey: process.env.QA_BACKEND_KEY,
- *     }),
- *     (req, res) => {
- *       const qa = (req as any).quantumAuth as QuantumAuthContext;
- *       // qa.userId, qa.deviceId, qa.payload (== req.body)
- *       res.json({ ok: true, user: qa.userId, data: qa.payload });
- *     }
- *   );
- */
 export function createExpressQuantumAuthMiddleware(
     cfg: QuantumAuthNodeConfig
 ) {
@@ -160,7 +95,7 @@ export function createExpressQuantumAuthMiddleware(
         next: () => void
     ) {
         try {
-            // Expect body to be the encrypted JSON coming from @quantumauth/web.
+
             const encrypted = req.body;
 
             if (!encrypted) {
@@ -194,12 +129,11 @@ export function createExpressQuantumAuthMiddleware(
                 method,
                 path,
                 headers: incomingHeaders,
-                encrypted,
             };
 
             const result = await verifyRequestWithServer(cfg, verifyPayload);
 
-            console.log("result", result)
+            req.userId = result.authenticated ? result.userId : null;
 
             if (!result.authenticated || !result.userId) {
                 res.status(401).json({
@@ -229,7 +163,6 @@ export function createExpressQuantumAuthMiddleware(
     };
 }
 
-// ---------- helpers ----------
 
 function joinUrl(base: string, path: string): string {
     if (!base.endsWith("/") && !path.startsWith("/")) {

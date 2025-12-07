@@ -1,7 +1,15 @@
+// src/constants/index.ts
+var QUANTUMAUTH_ALLOWED_HEADERS = [
+  "Content-Type",
+  "Authorization",
+  "X-QuantumAuth-Canonical-B64"
+];
+var QUANTUMAUTH_VERIFICATION_PATH = "/quantum-auth/v1/auth/verify";
+var QUANTUMAUTH_SERVER_URL = "http://localhost:1042";
+
 // src/index.ts
 async function verifyRequestWithServer(cfg, input) {
-  const verifyPath = cfg.verifyPath ?? "/quantum-auth/verify-request";
-  const url = joinUrl(cfg.qaServerUrl, verifyPath);
+  const url = joinUrl(QUANTUMAUTH_SERVER_URL, QUANTUMAUTH_VERIFICATION_PATH);
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
@@ -35,9 +43,8 @@ async function verifyRequestWithServer(cfg, input) {
     }
     return {
       authenticated: !!json?.authenticated,
-      userId: json?.user_id ?? json?.userId,
-      payload: json?.payload ?? json?.data,
-      error: json?.error
+      userId: json?.user_id ?? json?.userId
+      // payload: json?.payload ?? json?.data, // for future encryption
     };
   } catch (err) {
     return {
@@ -70,11 +77,10 @@ function createExpressQuantumAuthMiddleware(cfg) {
       const verifyPayload = {
         method,
         path,
-        headers: incomingHeaders,
-        encrypted
+        headers: incomingHeaders
       };
       const result = await verifyRequestWithServer(cfg, verifyPayload);
-      console.log("result", result);
+      req.userId = result.authenticated ? result.userId : null;
       if (!result.authenticated || !result.userId) {
         res.status(401).json({
           error: result.error ?? "QuantumAuth authentication failed"
@@ -106,6 +112,9 @@ function joinUrl(base, path) {
   return base + path;
 }
 export {
+  QUANTUMAUTH_ALLOWED_HEADERS,
+  QUANTUMAUTH_SERVER_URL,
+  QUANTUMAUTH_VERIFICATION_PATH,
   createExpressQuantumAuthMiddleware,
   verifyRequestWithServer
 };
