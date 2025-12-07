@@ -3,17 +3,25 @@
   "private": true,
   "version": "0.0.0",
   "description": "QuantumAuth SDK Monorepo",
+  "license": "Apache-2.0",
   "scripts": {
     "build": "pnpm -F \"@quantumauth/*\" build",
     "build:web": "pnpm -F @quantumauth/web build",
     "build:node": "pnpm -F @quantumauth/node build",
 
     "dev:next-demo": "pnpm -F quantum-auth-next-demo dev",
-    "dev:express-demo": "pnpm -F quantum-auth-express-demo dev"
+    "dev:express-demo": "pnpm -F quantum-auth-express-demo dev",
+
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "tsup": "^8.0.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+
+    "@changesets/cli": "^2.27.8",
+    "@changesets/changelog-github": "^0.5.0"
   }
 }

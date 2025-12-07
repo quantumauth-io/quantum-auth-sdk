@@ -3,33 +3,14 @@
 import { useEffect, useState } from "react";
 import {
     QuantumAuthWebClient,
-    type PqKem,
-    type PqKemAlg,
+    clientURL
 } from "@quantumauth/web";
 
 type Status = "unknown" | "online" | "offline";
 
-const QA_CLIENT_URL = "http://localhost:8090";
-
-// stub PQ KEM, same as before
-const pqKemStub: PqKem = {
-    async importPublicKey(raw: Uint8Array, alg: PqKemAlg) {
-        return { alg, raw };
-    },
-    async encapsulate() {
-        return {
-            sharedSecret: new Uint8Array(32),
-            ciphertext: new Uint8Array(32),
-        };
-    },
-};
 
 const qaClient = new QuantumAuthWebClient({
-    qaClientBaseUrl: "http://localhost:8090",
     backendBaseUrl: "http://localhost:4000",
-    pqKemAlg: "ML-KEM-768",
-    qaKemPublicKeyB64: "REPLACE_ME",
-    pqKem: pqKemStub,
     appId: "next-demo",
 });
 
@@ -40,7 +21,7 @@ export default function HomePage() {
 
     async function checkHealth() {
         try {
-            const res = await fetch(`${QA_CLIENT_URL}/api/health`, {
+            const res = await fetch(`${clientURL}/api/health`, {
                 cache: "no-store",
             });
 
@@ -120,7 +101,7 @@ export default function HomePage() {
             />
 
             <p style={{ fontSize: 14 }}>
-                Client on <code>{QA_CLIENT_URL}</code> is{" "}
+                Client on <code>{clientURL}</code> is{" "}
                 <strong style={{ textTransform: "uppercase" }}>{status}</strong>
             </p>
 

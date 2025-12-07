@@ -88,6 +88,7 @@ var QuantumAuthWebClient = class {
   }
 };
 export {
-  QuantumAuthWebClient
+  QuantumAuthWebClient,
+  clientURL
 };
 //# sourceMappingURL=index.js.map

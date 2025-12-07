@@ -1,12 +1,15 @@
 {
   "name": "@quantumauth/web",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "QuantumAuth browser SDK",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",

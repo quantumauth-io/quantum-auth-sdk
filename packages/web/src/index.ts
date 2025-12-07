@@ -1,6 +1,6 @@
 // packages/web/src/index.ts
 import {clientURL} from "./constants";
-
+export * from "./constants"
 export interface QuantumAuthWebConfig {
     backendBaseUrl: string;
     appId?: string;

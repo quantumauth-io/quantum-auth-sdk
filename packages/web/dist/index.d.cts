@@ -1,3 +1,5 @@
+declare const clientURL: string;
+
 interface QuantumAuthWebConfig {
     backendBaseUrl: string;
     appId?: string;
@@ -43,4 +45,4 @@ declare class QuantumAuthWebClient {
     private extractHost;
 }
 
-export { type ProtectedCallOptions, type ProtectedCallResult, QuantumAuthWebClient, type QuantumAuthWebConfig };
+export { type ProtectedCallOptions, type ProtectedCallResult, QuantumAuthWebClient, type QuantumAuthWebConfig, clientURL };

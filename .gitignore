@@ -1,7 +1,9 @@
 /.idea/
-/apps/next-demo/node_modules/
+/examples/next-demo/node_modules/
+/examples/next-demo/app/.next/
 /node_modules/
 /packages/node/node_modules/
 /packages/web/node_modules/
-/apps/express-demo/node_modules/
-.next
+/examples/express-demo/node_modules/
+
+/examples/next-demo/.next/
