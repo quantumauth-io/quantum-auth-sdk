@@ -26,24 +26,21 @@ jobs:
         with:
           version: 9
 
-      # 1) Write ~/.npmrc with the token
       - name: Configure npm auth
         run: |
-          echo "NPM_TOKEN length: ${#NPM_TOKEN}"
-          cat <<EOF > ~/.npmrc
+          cat <<EOF > .npmrc-auth
           @quantumauth:registry=https://registry.npmjs.org/
           //registry.npmjs.org/:_authToken=${NPM_TOKEN}
           always-auth=true
           EOF
 
-          echo "=== ~/.npmrc ==="
-          sed 's/_authToken=.*/_authToken=***REDACTED***/' ~/.npmrc
+          echo "=== .npmrc-auth ==="
+          sed 's/_authToken=.*/_authToken=***REDACTED***/' .npmrc-auth
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # 2) Check that auth REALLY works
       - name: Check npm auth
-        run: npm whoami
+        run: npm whoami --userconfig=.npmrc-auth
 
       - name: Install deps
         run: pnpm install --frozen-lockfile
