@@ -6,7 +6,7 @@ import {
     beforeEach,
     afterEach,
 } from "vitest";
-
+import * as NodeSdk from "./index";
 import {
     joinUrl,
     verifyRequestWithServer,
@@ -18,6 +18,29 @@ import type {
     VerificationResponse,
 } from "./index";
 
+
+function createMockResponse() {
+    return {
+        statusCode: 200,
+        body: undefined as any,
+        headers: {} as Record<string, string>,
+
+        status(code: number) {
+            this.statusCode = code;
+            return this;
+        },
+
+        json(payload: any) {
+            this.body = payload;
+            return this;
+        },
+
+        setHeader(name: string, value: string) {
+            this.headers[name] = value;
+            return this;
+        },
+    };
+}
 //
 // joinUrl tests
 //
@@ -31,6 +54,16 @@ describe("joinUrl", () => {
     it("does not double slash", () => {
         const url = joinUrl("https://api.example.com/", "/verify");
         expect(url).toBe("https://api.example.com/verify");
+    });
+
+    it("handles mixed trailing/leading slashes without duplication", () => {
+        expect(
+            joinUrl("https://api.example.com/", "verify"),
+        ).toBe("https://api.example.com/verify");
+
+        expect(
+            joinUrl("https://api.example.com", "/verify"),
+        ).toBe("https://api.example.com/verify");
     });
 });
 
@@ -61,6 +94,55 @@ afterEach(() => {
 });
 
 describe("verifyRequestWithServer", () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    afterEach(() => {
+        // restore real fetch & timers
+        globalThis.fetch = originalFetch!;
+        vi.useRealTimers();
+    });
+
+    it("aborts the request when timeout elapses", async () => {
+        vi.useFakeTimers();
+
+        // mock fetch so it rejects when the signal is aborted
+        const fetchMock = vi.fn(
+            (_input: any, init?: RequestInit) =>
+                new Promise<Response>((_resolve, reject) => {
+                    const signal = init?.signal as AbortSignal | undefined;
+                    if (signal) {
+                        signal.addEventListener("abort", () => {
+                            reject(new Error("Aborted"));
+                        });
+                    }
+                }),
+        );
+
+        globalThis.fetch = fetchMock;
+
+        const cfg: QuantumAuthNodeConfig = { timeoutMs: 10 };
+        const payload: VerificationRequestPayload = {
+            method: "GET",
+            path: "/timeout",
+            headers: {},
+        };
+
+        const promise = verifyRequestWithServer(cfg, payload);
+
+        // let the internal timeout fire
+        vi.advanceTimersByTime(11);
+
+        const result = await promise;
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(result.authenticated).toBe(false);
+        expect(result.error).toBe("Aborted");
+    });
+
+
+
     it("returns authenticated response on success", async () => {
         const responseBody = {
             authenticated: true,
@@ -140,6 +222,93 @@ describe("verifyRequestWithServer", () => {
         expect(result.authenticated).toBe(false);
         expect(result.error).toBe("network down");
     });
+    it("adds backendApiKey header and accepts payload from data field", async () => {
+        const cfg: QuantumAuthNodeConfig = {
+            backendApiKey: "secret-key",
+            timeoutMs: 5000,
+        };
+
+        const payload: VerificationRequestPayload = {
+            method: "POST",
+            path: "/verify",
+            headers: { "X-Test": "1" },
+        };
+
+        const responseBody = JSON.stringify({
+            authenticated: true,
+            user_id: "user-123",
+            data: { foo: "bar" },
+        });
+
+        const mockFetch = vi.fn().mockResolvedValue(
+            new Response(responseBody, {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+            }),
+        );
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const result = await verifyRequestWithServer(cfg, payload);
+
+            expect(result).toEqual({
+                authenticated: true,
+                userId: "user-123",
+                payload: { foo: "bar" },
+                error: undefined,
+            });
+
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+            const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+
+            expect(init.headers).toMatchObject({
+                "Content-Type": "application/json",
+                "X-QuantumAuth-Backend-Key": "secret-key",
+            });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+    it("handles ok response with non-JSON body without throwing", async () => {
+        const cfg: QuantumAuthNodeConfig = {
+            timeoutMs: 3000,
+        };
+
+        const payload: VerificationRequestPayload = {
+            method: "GET",
+            path: "/verify",
+            headers: {},
+        };
+
+        const mockFetch = vi.fn().mockResolvedValue(
+            new Response("not-json-at-all", {
+                status: 200,
+                headers: { "Content-Type": "text/plain" },
+            }),
+        );
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const result = await verifyRequestWithServer(cfg, payload);
+
+            // JSON parse fails -> json=null -> authenticated false, no user/payload, no error
+            expect(result).toEqual({
+                authenticated: false,
+                userId: undefined,
+                payload: undefined,
+                error: undefined,
+            });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+
 });
 
 //
@@ -153,19 +322,6 @@ type MockRes = {
     json: (body: unknown) => MockRes;
 };
 
-function createMockRes(): MockRes {
-    const res: MockRes = {
-        status(code: number) {
-            this.statusCode = code;
-            return this;
-        },
-        json(body: unknown) {
-            this.body = body;
-            return this;
-        },
-    };
-    return res;
-}
 
 // helper: mock QA server response via fetch and capture verify payload
 function mockVerifyFromMiddleware(result: VerificationResponse, capture: { payload?: VerificationRequestPayload }) {
@@ -195,6 +351,46 @@ function mockVerifyFromMiddleware(result: VerificationResponse, capture: { paylo
 }
 
 describe("createExpressQuantumAuthMiddleware", () => {
+    const makeRes = () => {
+        const res: any = {
+            statusCode: 200,
+            body: undefined as unknown,
+            status(code: number) {
+                this.statusCode = code;
+                return this;
+            },
+            json(payload: unknown) {
+                this.body = payload;
+                return this;
+            },
+        };
+        return res;
+    };
+    it("returns 500 when middleware throws", async () => {
+        const middleware = createExpressQuantumAuthMiddleware({});
+
+        // Reading `body` will throw, so the middleware's try block fails
+        const req = {
+            method: "POST",
+            originalUrl: "/qa/demo",
+            headers: {},
+            get body() {
+                throw new Error("boom");
+            },
+        } as any;
+
+        const res = createMockResponse();
+        const next = vi.fn();
+
+        await middleware(req, res as any, next as any);
+
+        expect(res.statusCode).toBe(500);
+        expect(res.body).toEqual({
+            error: "QuantumAuth middleware error: boom",
+        });
+        expect(next).not.toHaveBeenCalled();
+    });
+
     it("returns 400 when body is missing", async () => {
         const cfg: QuantumAuthNodeConfig = {};
         const middleware = createExpressQuantumAuthMiddleware(cfg);
@@ -206,7 +402,7 @@ describe("createExpressQuantumAuthMiddleware", () => {
             headers: {},
         };
 
-        const res = createMockRes();
+        const res = createMockResponse();
         const next = vi.fn();
 
         await middleware(req as any, res as any, next as any);
@@ -245,7 +441,7 @@ describe("createExpressQuantumAuthMiddleware", () => {
             },
         };
 
-        const res = createMockRes();
+        const res = createMockResponse();
         const next = vi.fn();
 
         await middleware(req as any, res as any, next as any);
@@ -296,7 +492,7 @@ describe("createExpressQuantumAuthMiddleware", () => {
             headers: {},
         };
 
-        const res = createMockRes();
+        const res = createMockResponse();
         const next = vi.fn();
 
         await middleware(req as any, res as any, next as any);
@@ -332,7 +528,7 @@ describe("createExpressQuantumAuthMiddleware", () => {
             headers: {},
         };
 
-        const res = createMockRes();
+        const res = createMockResponse();
         const next = vi.fn();
 
         await middleware(req as any, res as any, next as any);

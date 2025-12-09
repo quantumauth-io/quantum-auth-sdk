@@ -47,6 +47,62 @@ afterEach(() => {
     delete globalThis.window;
 });
 
+describe("QuantumAuthWebClient.requestChallenge error paths", () => {
+    it("throws if called without window (SSR environment)", async () => {
+        const client = new QuantumAuthWebClient({
+            backendBaseUrl: "https://api.example.com",
+        });
+
+        const hadWindow = "window" in globalThis;
+        const originalWindow = (globalThis as any).window;
+
+        if (hadWindow) {
+            delete (globalThis as any).window;
+        }
+
+        try {
+            await expect(
+                client["requestChallenge"]({
+                    method: "GET",
+                    path: "/qa/demo",
+                    backendHost: "api.example.com",
+                }),
+            ).rejects.toThrow(
+                "QuantumAuthWebClient.requestChallenge must run in a browser",
+            );
+        } finally {
+            if (hadWindow) {
+                (globalThis as any).window = originalWindow;
+            } else {
+                // ensure it's really absent after test
+                delete (globalThis as any).window;
+            }
+        }
+    });
+    it("throws if QuantumAuth browser extension is not detected", async () => {
+        const client = new QuantumAuthWebClient({
+            backendBaseUrl: "https://api.example.com",
+        });
+
+        // Ensure window exists for this test
+        (globalThis as any).window = (globalThis as any).window ?? {};
+
+        (isQuantumAuthExtensionAvailable as unknown as Mock).mockResolvedValueOnce(false);
+
+        await expect(
+
+            client["requestChallenge"]({
+                method: "POST",
+                path: "/qa/demo",
+                backendHost: "api.example.com",
+            }),
+        ).rejects.toThrow(
+            "QuantumAuth browser extension not detected. Please install the QuantumAuth extension to use protected requests.",
+        );
+    });
+});
+
+
 describe("QuantumAuthWebClient.extractHost", () => {
     it("extracts host from full URL", () => {
         const client = new QuantumAuthWebClient({

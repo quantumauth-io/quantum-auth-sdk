@@ -76,7 +76,7 @@ export async function verifyRequestWithServer(
         });
 
         const text = await res.text();
-        let json: VerifyResponseBody | null = null;
+        let json: VerifyResponseBody | null;
 
         try {
             json = text ? (JSON.parse(text) as VerifyResponseBody) : null;
