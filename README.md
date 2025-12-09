@@ -13,6 +13,8 @@
 [![Node version](https://img.shields.io/node/v/@quantumauth/node)](https://www.npmjs.com/package/@quantumauth/node)
 [![License](https://img.shields.io/github/license/quantumauth-io/quantum-auth-sdk)](https://github.com/quantumauth-io/quantum-auth-sdk/blob/main/LICENSE)
 [![Package manager: pnpm](https://img.shields.io/static/v1?label=package+manager&message=pnpm&color=F69220&logo=pnpm)](https://pnpm.io/)
+[![Coverage Status](https://codecov.io/gh/quantumauth-io/quantum-auth-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/quantumauth-io/quantum-auth-sdk)
+
 
 QuantumAuth is an open-source, hardware-anchored, post-quantum authentication platform.  
 This monorepo contains the official SDKs used to integrate QuantumAuth into web and server-side applications.

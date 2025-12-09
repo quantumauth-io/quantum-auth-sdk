@@ -198,7 +198,7 @@ export function createExpressQuantumAuthMiddleware(
     };
 }
 
-function joinUrl(base: string, path: string): string {
+export function joinUrl(base: string, path: string): string {
     if (!base.endsWith("/") && !path.startsWith("/")) {
         return base + "/" + path;
     }

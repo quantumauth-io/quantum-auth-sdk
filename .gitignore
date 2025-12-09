@@ -7,3 +7,4 @@
 /examples/express-demo/node_modules/
 
 /examples/next-demo/.next/
+/coverage/
