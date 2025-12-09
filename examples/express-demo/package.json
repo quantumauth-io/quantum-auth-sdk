@@ -1,7 +1,7 @@
 {
   "name": "quantum-auth-express-demo",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
     "start": "node dist/server.js",
