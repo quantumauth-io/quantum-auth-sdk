@@ -5,8 +5,8 @@
 [![Release](https://github.com/quantumauth-io/quantum-auth-sdk/actions/workflows/release.yml/badge.svg)](https://github.com/quantumauth-io/quantum-auth-sdk/actions/workflows/release.yml)
 
 [![web - npm version](https://img.shields.io/npm/v/@quantumauth/web.svg?label=@quantumauth/web)](https://www.npmjs.com/package/@quantumauth/web)
-[![node - npm version](https://img.shields.io/npm/v/@quantumauth/node.svg?label=@quantumauth/node)](https://www.npmjs.com/package/@quantumauth/node)
 [![web downloads](https://img.shields.io/npm/dm/@quantumauth/web)](https://www.npmjs.com/package/@quantumauth/web)
+[![node - npm version](https://img.shields.io/npm/v/@quantumauth/node.svg?label=@quantumauth/node)](https://www.npmjs.com/package/@quantumauth/node)
 [![node downloads](https://img.shields.io/npm/dm/@quantumauth/node)](https://www.npmjs.com/package/@quantumauth/node)
 
 [![web size](https://img.shields.io/bundlephobia/minzip/@quantumauth/web)](https://bundlephobia.com/package/@quantumauth/web)

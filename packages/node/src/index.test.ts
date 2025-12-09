@@ -104,6 +104,78 @@ describe("verifyRequestWithServer", () => {
         vi.useRealTimers();
     });
 
+    it("handles ok response with empty body string", async () => {
+        const cfg: QuantumAuthNodeConfig = { timeoutMs: 3000 };
+        const payload: VerificationRequestPayload = {
+            method: "GET",
+            path: "/empty",
+            headers: {},
+        };
+
+        const mockFetch = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            statusText: "OK",
+            text: async () => "",
+        } as any);
+
+        (globalThis as any).fetch = mockFetch as any;
+
+        const result = await verifyRequestWithServer(cfg, payload);
+
+        expect(result).toEqual<VerificationResponse>({
+            authenticated: false,
+            userId: undefined,
+            payload: undefined,
+            error: undefined,
+        });
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("prefers server error field on non-ok responses", async () => {
+        const cfg: QuantumAuthNodeConfig = {};
+        const payload: VerificationRequestPayload = {
+            method: "GET",
+            path: "/forbidden",
+            headers: {},
+        };
+
+        const mockFetch = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 403,
+            statusText: "Forbidden",
+            text: async () => JSON.stringify({ error: "access denied" }),
+        } as any);
+
+        (globalThis as any).fetch = mockFetch as any;
+
+        const result = await verifyRequestWithServer(cfg, payload);
+
+        expect(result.authenticated).toBe(false);
+        expect(result.error).toBe("access denied");
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("stringifies non-Error exceptions from fetch", async () => {
+        const cfg: QuantumAuthNodeConfig = {};
+        const payload: VerificationRequestPayload = {
+            method: "POST",
+            path: "/verify",
+            headers: {},
+        };
+
+        const mockFetch = vi.fn(async () => {
+            // non-Error thrown value
+            throw "totally-broken";
+        });
+        (globalThis as any).fetch = mockFetch as any;
+
+        const result = await verifyRequestWithServer(cfg, payload);
+
+        expect(result.authenticated).toBe(false);
+        expect(result.error).toBe("totally-broken");
+    });
+
     it("aborts the request when timeout elapses", async () => {
         vi.useFakeTimers();
 
@@ -366,6 +438,144 @@ describe("createExpressQuantumAuthMiddleware", () => {
         };
         return res;
     };
+    it("uses req.url when originalUrl is missing and joins array headers", async () => {
+        const cfg: QuantumAuthNodeConfig = {};
+
+        const capture: { payload?: VerificationRequestPayload } = {};
+        mockVerifyFromMiddleware(
+            {
+                authenticated: true,
+                userId: "user-123",
+                payload: { ok: true },
+            },
+            capture,
+        );
+
+        const middleware = createExpressQuantumAuthMiddleware(cfg);
+
+        const req: any = {
+            body: { encrypted: "ciphertext" },
+            method: "GET",
+            // no originalUrl
+            url: "/from-url",
+            headers: {
+                Authorization: ["Bearer a", "Bearer b"],
+                "x-qa-signature": "sig",
+            },
+        };
+
+        const res = createMockResponse();
+        const next = vi.fn();
+
+        await middleware(req as any, res as any, next as any);
+
+        expect(next).toHaveBeenCalledTimes(1);
+
+        expect(capture.payload).toBeDefined();
+        expect(capture.payload!.path).toBe("/from-url");
+        expect(capture.payload!.headers).toEqual({
+            Authorization: "Bearer a,Bearer b",
+            "x-qa-signature": "sig",
+        });
+    });
+
+    it("handles missing headers object gracefully", async () => {
+        const cfg: QuantumAuthNodeConfig = {};
+
+        const capture: { payload?: VerificationRequestPayload } = {};
+        mockVerifyFromMiddleware(
+            {
+                authenticated: false,
+                userId: undefined,
+                payload: undefined,
+            },
+            capture,
+        );
+
+        const middleware = createExpressQuantumAuthMiddleware(cfg);
+
+        const req: any = {
+            body: { encrypted: "ciphertext" },
+            method: "POST",
+            originalUrl: "/qa/demo",
+            // headers is undefined -> falls back to {}
+            headers: undefined,
+        };
+
+        const res = createMockResponse();
+        const next = vi.fn();
+
+        await middleware(req as any, res as any, next as any);
+
+        expect(res.statusCode).toBe(401);
+        expect(res.body).toEqual({
+            error: "QuantumAuth authentication failed",
+        });
+        expect(next).not.toHaveBeenCalled();
+        expect(capture.payload!.headers).toEqual({});
+    });
+
+    it("returns 401 when authenticated but userId is missing", async () => {
+        const cfg: QuantumAuthNodeConfig = {};
+
+        const capture: { payload?: VerificationRequestPayload } = {};
+        mockVerifyFromMiddleware(
+            {
+                authenticated: true,
+                userId: undefined,
+                payload: undefined,
+                error: undefined,
+            },
+            capture,
+        );
+
+        const middleware = createExpressQuantumAuthMiddleware(cfg);
+
+        const req: any = {
+            body: { encrypted: "ciphertext" },
+            method: "POST",
+            originalUrl: "/qa/demo",
+            headers: {},
+        };
+
+        const res = createMockResponse();
+        const next = vi.fn();
+
+        await middleware(req as any, res as any, next as any);
+
+        expect(res.statusCode).toBe(401);
+        expect(res.body).toEqual({
+            error: "QuantumAuth authentication failed",
+        });
+        expect(req.userId).toBeNull();
+        expect(next).not.toHaveBeenCalled();
+    });
+
+    it("stringifies non-Error thrown inside middleware path", async () => {
+        const cfg: QuantumAuthNodeConfig = {};
+        const middleware = createExpressQuantumAuthMiddleware(cfg);
+
+        // Throw a non-Error value when accessing body
+        const req: any = {
+            method: "POST",
+            originalUrl: "/qa/demo",
+            headers: {},
+            get body() {
+                throw "weird-failure";
+            },
+        };
+
+        const res = createMockResponse();
+        const next = vi.fn();
+
+        await middleware(req as any, res as any, next as any);
+
+        expect(res.statusCode).toBe(500);
+        expect(res.body).toEqual({
+            error: "QuantumAuth middleware error: weird-failure",
+        });
+        expect(next).not.toHaveBeenCalled();
+    });
     it("returns 500 when middleware throws", async () => {
         const middleware = createExpressQuantumAuthMiddleware({});
 
@@ -535,5 +745,74 @@ describe("createExpressQuantumAuthMiddleware", () => {
 
         expect(next).toHaveBeenCalledTimes(1);
         expect(req.body).toBe(originalBody);
+    });
+    it("ignores null header values and still forwards QA signature header", async () => {
+        const cfg: QuantumAuthNodeConfig = {};
+
+        const capture: { payload?: VerificationRequestPayload } = {};
+        mockVerifyFromMiddleware(
+            {
+                authenticated: true,
+                userId: "user-123",
+                payload: undefined,
+            },
+            capture,
+        );
+
+        const middleware = createExpressQuantumAuthMiddleware(cfg);
+
+        const req: any = {
+            body: { encrypted: "ciphertext" },
+            method: "POST",
+            originalUrl: "/qa/demo",
+            headers: {
+                "X-Null-Header": null,          // triggers `value == null` -> continue
+                "X-QA-Signature": "sig-value",  // hits `lower === "x-qa-signature"`
+            },
+        };
+
+        const res = createMockResponse();
+        const next = vi.fn();
+
+        await middleware(req as any, res as any, next as any);
+
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(capture.payload).toBeDefined();
+        expect(capture.payload!.headers).toEqual({
+            "X-QA-Signature": "sig-value",
+        });
+    });
+    it("falls back to empty string when neither originalUrl nor url exist", async () => {
+        const cfg: QuantumAuthNodeConfig = {};
+
+        const capture: { payload?: VerificationRequestPayload } = {};
+        mockVerifyFromMiddleware(
+            {
+                authenticated: true,
+                userId: "user-123",
+                payload: undefined,
+            },
+            capture,
+        );
+
+        const middleware = createExpressQuantumAuthMiddleware(cfg);
+
+        const req: any = {
+            body: { encrypted: "ciphertext" },
+            method: "POST",
+            // no originalUrl
+            // no url
+            headers: {},
+        };
+
+        const res = createMockResponse();
+        const next = vi.fn();
+
+        await middleware(req as any, res as any, next as any);
+
+        expect(next).toHaveBeenCalledTimes(1);
+
+        // the path should fallback to ""
+        expect(capture.payload!.path).toBe("");
     });
 });

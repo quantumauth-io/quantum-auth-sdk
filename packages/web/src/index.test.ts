@@ -284,6 +284,37 @@ describe("QuantumAuthWebClient.requestChallenge", () => {
 });
 
 describe("QuantumAuthWebClient.request", () => {
+    it("defaults body to {} for non-GET without body and handles empty response body", async () => {
+        // @ts-expect-error — test-only window stub
+        globalThis.window = {} as Window;
+        isExtMock.mockResolvedValue(true);
+        qaRequestMock.mockResolvedValue({ qaProof: {} });
+
+        const fetchMock = vi.fn<FetchMock["mockImplementation"]>() as unknown as FetchMock;
+        fetchMock.mockResolvedValue(
+            new Response("", {
+                status: 200,          // use 200 instead of 204
+                headers: {},
+            }),
+        );
+        globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+        const client = new QuantumAuthWebClient({
+            backendBaseUrl: "https://backend.quantumauth.io/",
+        });
+
+        const result = await client.request({
+            method: "POST",
+            path: "/qa/demo",
+            // no body -> should default to {}
+        });
+
+        const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+
+        expect(init.body).toBe(JSON.stringify({}));
+        expect(result.data).toBeNull();
+    });
+
     it("performs a protected POST request and parses JSON", async () => {
         // browser + extension
         // @ts-expect-error — test-only window stub
