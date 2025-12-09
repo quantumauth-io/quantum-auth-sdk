@@ -24,6 +24,9 @@ jobs:
         with:
           version: 9
 
+      - name: Debug pnpm
+        run: pnpm --version
+
       - name: Install deps
         run: pnpm install
 
