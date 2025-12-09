@@ -1,4 +1,5 @@
 import express from "express";
+import { Request, Response } from "express";
 import cors from "cors";
 
 import {
@@ -46,11 +47,11 @@ app.get("/health", (_req, res) => {
 });
 
 
-app.post("/qa/demo", qaMiddleware, (req: any, res) => {
+app.post("/qa/demo", qaMiddleware, (req: Request, res : Response) => {
 
     res.json({
-        userId: req.userId, // user id is from the middleware
-        body: req.body, // plain JSON body from frontend
+        userId: req.userId,
+        body: req.body,
     });
 });
 

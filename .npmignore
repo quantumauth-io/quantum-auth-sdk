@@ -1,0 +1,58 @@
+
+# Build artifacts should NOT be published
+src/
+tests/
+__tests__/
+coverage/
+build/
+dist-tsc/
+tsconfig.tsbuildinfo
+
+# Local development files
+.vscode/
+.idea/
+.DS_Store
+
+# Node stuff
+node_modules/
+npm-debug.log
+pnpm-debug.log
+
+# Linting / formatting / tooling configs
+.eslintrc*
+eslint.config.*
+.prettierrc*
+.prettierignore
+stylelint.config.*
+commitlint.config.*
+jest.config.*
+vitest.config.*
+tsconfig.json
+tsconfig.*.json
+
+# Env and secrets
+.env
+.env.*
+*.local
+
+# Changesets (for release workflow only)
+.changeset/
+
+# GitHub metadata (not needed in your package)
+.github/
+.gitignore
+.gitattributes
+
+# Package managers
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Docs / misc
+README_assets/
+docs/
+*.mdx
+*.drawio
+*.png
+*.jpg
+*.svg

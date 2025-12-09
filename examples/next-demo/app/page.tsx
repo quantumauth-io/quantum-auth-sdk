@@ -10,13 +10,25 @@ const qaClient = new QuantumAuthWebClient({
     appId: "next-demo",
 });
 
+type DemoResponse = {
+    userId?: string;
+    body: {
+        ping: string;
+    };
+};
+
+export function toErrorMessage(err: unknown): string {
+    return err instanceof Error ? err.message : String(err);
+}
+
+
 export default function HomePage() {
     const [qaResult, setQaResult] = useState<string>("");
 
 
     async function callProtectedDemo() {
         try {
-            const res = await qaClient.request<any, { ping: string }>({
+            const res = await qaClient.request<DemoResponse>({
                 method: "POST",
                 path: "/qa/demo", // Express demo route
                 body: { ping: "hello from next demo" },
@@ -25,8 +37,8 @@ export default function HomePage() {
             setQaResult(
                 `status=${res.status} body=${JSON.stringify(res.data, null, 2)}`
             );
-        } catch (err: any) {
-            setQaResult(`error: ${String(err?.message ?? err)}`);
+        } catch (err) {
+            setQaResult("error: " + toErrorMessage(err));
         }
     }
 

@@ -8,20 +8,20 @@
     "build": "pnpm -F \"@quantumauth/*\" build",
     "build:web": "pnpm -F @quantumauth/web build",
     "build:node": "pnpm -F @quantumauth/node build",
-
     "dev:next-demo": "pnpm -F quantum-auth-next-demo dev",
     "dev:express-demo": "pnpm -F quantum-auth-express-demo dev",
-
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && changeset publish"
+    "release": "pnpm build && changeset publish",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.27.8",
     "@types/node": "^24.10.1",
+    "eslint": "^9.39.1",
     "tsup": "^8.0.0",
     "typescript": "^5.6.0",
-
-    "@changesets/cli": "^2.27.8",
-    "@changesets/changelog-github": "^0.5.0"
+    "typescript-eslint": "^8.49.0"
   }
 }
