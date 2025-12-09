@@ -1,6 +1,6 @@
 // packages/web/src/index.ts
-import {clientURL} from "./constants";
-export * from "./constants"
+import {isQuantumAuthExtensionAvailable, qaRequest} from "./extensionBridge";
+
 export interface QuantumAuthWebConfig {
     backendBaseUrl: string;
     appId?: string;
@@ -24,27 +24,24 @@ interface ChallengeResponse {
     qaProof: Record<string, string>;
 }
 
-/**
- * Represents a web client used for managing quantum-authenticated requests to a backend.
- * Responsible for handling challenge-response mechanisms and ensuring secure communication.
- */
 export class QuantumAuthWebClient {
-    private readonly qaClientBaseUrl: string;
     private readonly backendBaseUrl: string;
+    private readonly appId?: string;
 
     constructor(cfg: QuantumAuthWebConfig) {
-        this.qaClientBaseUrl = clientURL
         this.backendBaseUrl = cfg.backendBaseUrl.replace(/\/+$/, "");
+        this.appId = cfg.appId;
     }
 
     async request<TResp = unknown, TBody = unknown>(
-        opts: ProtectedCallOptions<TBody>
+        opts: ProtectedCallOptions<TBody>,
     ): Promise<ProtectedCallResult<TResp>> {
         const challenge = await this.requestChallenge({
             method: opts.method,
             path: opts.path,
             backendHost: this.extractHost(this.backendBaseUrl),
         });
+
         const url = this.backendBaseUrl + opts.path;
 
         const headers = new Headers({
@@ -58,10 +55,7 @@ export class QuantumAuthWebClient {
         const resp = await fetch(url, {
             method: opts.method,
             headers,
-            body:
-                opts.method === "GET"
-                    ? undefined
-                    : JSON.stringify(opts.body ?? {}),
+            body: opts.method === "GET" ? undefined : JSON.stringify(opts.body ?? {}),
             credentials: "include",
         });
 
@@ -82,52 +76,47 @@ export class QuantumAuthWebClient {
         };
     }
 
-    /**
-     * Makes an asynchronous request to get a QA challenge from the qa client.
-     *
-     * @param {Object} params - The parameters required to request the challenge.
-     * @param {string} params.method - The HTTP method used in the challenge request.
-     * @param {string} params.path - The backend API path for which the challenge is requested.
-     * @param {string} params.backendHost - The backend host to authenticate with.
-     * @return {Promise<ChallengeResponse>} A promise that resolves to the challenge response, containing the required proof.
-     * @throws {Error} If the response status indicates a failure or the server returns an error.
-     */
     private async requestChallenge(params: {
         method: string;
         path: string;
         backendHost: string;
     }): Promise<ChallengeResponse> {
-        const url = `${this.qaClientBaseUrl}/api/qa/authenticate`;
-        const resp = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                method: params.method,
-                path: params.path,
-                backend_host: params.backendHost,
-            }),
-            credentials: "include",
-        });
-
-        if (!resp.ok) {
-            const text = await resp.text();
-            throw new Error(`qa challenge failed: ${resp.status} ${text}`);
+        if (typeof window === "undefined") {
+            throw new Error(
+                "QuantumAuthWebClient.requestChallenge must run in a browser",
+            );
         }
 
-        const json = await resp.json();
+        const hasExtension = await isQuantumAuthExtensionAvailable();
+        if (!hasExtension) {
+            throw new Error(
+                "QuantumAuth browser extension not detected. Please install the QuantumAuth extension to use protected requests.",
+            );
+        }
+
+        const resp = await qaRequest<{
+            qaProof?: Record<string, string>;
+            data?: { qaProof?: Record<string, string> };
+        }>({
+            action: "request_challenge",
+            data: {
+                method: params.method,
+                path: params.path,
+                backendHost: params.backendHost,
+                appId: this.appId,
+            },
+        });
+
+        const qaProof =
+            resp.qaProof ??
+            resp.data?.qaProof ??
+            {};
 
         return {
-            qaProof: json.headers ?? {},
-
+            qaProof,
         };
     }
 
-    /**
-     * Extracts the host from the given URL string. If the URL is invalid, it attempts to manually parse and extract the host.
-     *
-     * @param {string} url - The URL string from which the host needs to be extracted.
-     * @return {string} The extracted host from the provided URL.
-     */
     private extractHost(url: string): string {
         try {
             const u = new URL(url);

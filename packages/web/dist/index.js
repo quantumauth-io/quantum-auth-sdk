@@ -1,11 +1,69 @@
-// src/constants/index.ts
-var clientURL = "http://localhost:8090";
+// src/extensionBridge.ts
+var cachedExtensionAvailable = null;
+function qaRequest(payload, timeoutMs = 15e3) {
+  if (typeof window === "undefined") {
+    return Promise.reject(
+      new Error("qaRequest must be called in a browser context")
+    );
+  }
+  return new Promise((resolve, reject) => {
+    const correlationId = window.crypto?.randomUUID?.() ?? `qa-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const timer = setTimeout(() => {
+      window.removeEventListener("message", onMessage);
+      reject(new Error("QuantumAuth extension timeout"));
+    }, timeoutMs);
+    function onMessage(event) {
+      const msg = event.data;
+      if (!msg || msg.type !== "QUANTUMAUTH_RESPONSE" || msg.correlationId !== correlationId) {
+        return;
+      }
+      clearTimeout(timer);
+      window.removeEventListener("message", onMessage);
+      if (msg.error || msg.payload?.ok === false) {
+        reject(
+          new Error(
+            msg.error || msg.payload?.error || "QuantumAuth extension error"
+          )
+        );
+      } else {
+        resolve(msg.payload?.data);
+      }
+    }
+    window.addEventListener("message", onMessage);
+    window.postMessage(
+      {
+        type: "QUANTUMAUTH_REQUEST",
+        correlationId,
+        payload
+      },
+      "*"
+    );
+  });
+}
+async function isQuantumAuthExtensionAvailable(timeoutMs = 1e3) {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  if (cachedExtensionAvailable !== null) {
+    return cachedExtensionAvailable;
+  }
+  try {
+    await qaRequest(
+      { action: "ping" },
+      timeoutMs
+    );
+    cachedExtensionAvailable = true;
+  } catch {
+    cachedExtensionAvailable = false;
+  }
+  return cachedExtensionAvailable;
+}
 
 // src/index.ts
 var QuantumAuthWebClient = class {
   constructor(cfg) {
-    this.qaClientBaseUrl = clientURL;
     this.backendBaseUrl = cfg.backendBaseUrl.replace(/\/+$/, "");
+    this.appId = cfg.appId;
   }
   async request(opts) {
     const challenge = await this.requestChallenge({
@@ -41,43 +99,32 @@ var QuantumAuthWebClient = class {
       raw: resp
     };
   }
-  /**
-   * Makes an asynchronous request to get a QA challenge from the qa client.
-   *
-   * @param {Object} params - The parameters required to request the challenge.
-   * @param {string} params.method - The HTTP method used in the challenge request.
-   * @param {string} params.path - The backend API path for which the challenge is requested.
-   * @param {string} params.backendHost - The backend host to authenticate with.
-   * @return {Promise<ChallengeResponse>} A promise that resolves to the challenge response, containing the required proof.
-   * @throws {Error} If the response status indicates a failure or the server returns an error.
-   */
   async requestChallenge(params) {
-    const url = `${this.qaClientBaseUrl}/api/qa/authenticate`;
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    if (typeof window === "undefined") {
+      throw new Error(
+        "QuantumAuthWebClient.requestChallenge must run in a browser"
+      );
+    }
+    const hasExtension = await isQuantumAuthExtensionAvailable();
+    if (!hasExtension) {
+      throw new Error(
+        "QuantumAuth browser extension not detected. Please install the QuantumAuth extension to use protected requests."
+      );
+    }
+    const resp = await qaRequest({
+      action: "request_challenge",
+      data: {
         method: params.method,
         path: params.path,
-        backend_host: params.backendHost
-      }),
-      credentials: "include"
+        backendHost: params.backendHost,
+        appId: this.appId
+      }
     });
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(`qa challenge failed: ${resp.status} ${text}`);
-    }
-    const json = await resp.json();
+    const qaProof = resp.qaProof ?? resp.data?.qaProof ?? {};
     return {
-      qaProof: json.headers ?? {}
+      qaProof
     };
   }
-  /**
-   * Extracts the host from the given URL string. If the URL is invalid, it attempts to manually parse and extract the host.
-   *
-   * @param {string} url - The URL string from which the host needs to be extracted.
-   * @return {string} The extracted host from the provided URL.
-   */
   extractHost(url) {
     try {
       const u = new URL(url);
@@ -88,7 +135,6 @@ var QuantumAuthWebClient = class {
   }
 };
 export {
-  QuantumAuthWebClient,
-  clientURL
+  QuantumAuthWebClient
 };
 //# sourceMappingURL=index.js.map
