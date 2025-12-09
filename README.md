@@ -1,4 +1,6 @@
 ![Powered by QuantumAuth](https://img.shields.io/badge/Powered%20By-QuantumAuth-1a1a1a?style=for-the-badge&logo=dependabot)
+![Lint Status](https://github.com/quantumauth-io/quantum-auth-sdk/actions/workflows/lint.yml/badge.svg)
+![Release](https://img.shields.io/npm/v/quantumauth-sdk)
 
 # QuantumAuth SDK Monorepo
 
