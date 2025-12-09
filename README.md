@@ -15,6 +15,8 @@
 [![Package manager: pnpm](https://img.shields.io/static/v1?label=package+manager&message=pnpm&color=F69220&logo=pnpm)](https://pnpm.io/)
 [![Coverage Status](https://codecov.io/gh/quantumauth-io/quantum-auth-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/quantumauth-io/quantum-auth-sdk)
 
+![Coverage Sunburst](https://codecov.io/gh/quantumauth-io/quantum-auth-sdk/graphs/sunburst.svg?token=zDR3IhVa7u)
+
 
 QuantumAuth is an open-source, hardware-anchored, post-quantum authentication platform.  
 This monorepo contains the official SDKs used to integrate QuantumAuth into web and server-side applications.
