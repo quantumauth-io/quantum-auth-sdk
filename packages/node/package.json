@@ -7,6 +7,15 @@
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quantumauth-io/quantum-auth-sdk.git",
+    "directory": "packages/web"
+  },
+  "homepage": "https://github.com/quantumauth-io/quantum-auth-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/quantumauth-io/quantum-auth-sdk/issues"
+  },
   "publishConfig": {
     "access": "public"
   },
