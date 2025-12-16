@@ -25,11 +25,10 @@ __export(index_exports, {
 module.exports = __toCommonJS(index_exports);
 
 // src/extensionBridge.ts
+var cachedExtensionAvailable = null;
 function qaRequest(payload, timeoutMs = 15e3) {
   if (typeof window === "undefined") {
-    return Promise.reject(
-      new Error("qaRequest must be called in a browser context")
-    );
+    return Promise.reject(new Error("qaRequest must be called in a browser context"));
   }
   return new Promise((resolve, reject) => {
     const correlationId = window.crypto?.randomUUID?.() ?? `qa-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -39,33 +38,37 @@ function qaRequest(payload, timeoutMs = 15e3) {
     }, timeoutMs);
     function onMessage(event) {
       const msg = event.data;
-      console.log("Received response from QuantumAuth extension:", msg);
       if (!msg || msg.type !== "QUANTUMAUTH_RESPONSE" || msg.correlationId !== correlationId) {
         return;
       }
       clearTimeout(timer);
       window.removeEventListener("message", onMessage);
-      if (msg.error || msg.payload?.ok === false) {
-        reject(
-          new Error(
-            msg.error || msg.payload?.error || "QuantumAuth extension error"
-          )
-        );
-      } else {
-        resolve(msg.payload?.data);
+      const p = msg.payload;
+      const deepError = p?.error ?? p?.data?.error ?? p?.data?.message;
+      const isOk = msg.error == null && p?.ok !== false && p?.data?.ok !== false;
+      if (!isOk) {
+        reject(new Error(msg.error || deepError || "QuantumAuth extension error"));
+        return;
       }
+      resolve(p?.data);
     }
     window.addEventListener("message", onMessage);
-    console.log("Sending request to QuantumAuth extension:", payload);
     window.postMessage(
-      {
-        type: "QUANTUMAUTH_REQUEST",
-        correlationId,
-        payload
-      },
+      { type: "QUANTUMAUTH_REQUEST", correlationId, payload },
       "*"
     );
   });
+}
+async function isQuantumAuthExtensionAvailable(timeoutMs = 1e3) {
+  if (typeof window === "undefined") return false;
+  if (cachedExtensionAvailable === true) return true;
+  try {
+    await qaRequest({ action: "ping" }, timeoutMs);
+    cachedExtensionAvailable = true;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // src/index.ts
@@ -112,6 +115,12 @@ var QuantumAuthWebClient = class {
     if (typeof window === "undefined") {
       throw new Error(
         "QuantumAuthWebClient.requestChallenge must run in a browser"
+      );
+    }
+    const hasExtension = await isQuantumAuthExtensionAvailable();
+    if (!hasExtension) {
+      throw new Error(
+        "QuantumAuth browser extension not detected. Please install the QuantumAuth extension to use protected requests."
       );
     }
     const resp = await qaRequest({
