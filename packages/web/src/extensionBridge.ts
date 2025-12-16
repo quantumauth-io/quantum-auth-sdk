@@ -31,6 +31,7 @@ export function qaRequest<TResp = unknown, TData = unknown>(
 
         function onMessage(event: MessageEvent) {
             const msg = event.data;
+            console.log("Received response from QuantumAuth extension:", msg);
             if (
                 !msg ||
                 msg.type !== "QUANTUMAUTH_RESPONSE" ||
@@ -54,6 +55,8 @@ export function qaRequest<TResp = unknown, TData = unknown>(
         }
 
         window.addEventListener("message", onMessage);
+
+        console.log("Sending request to QuantumAuth extension:", payload);
 
         window.postMessage(
             {

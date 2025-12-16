@@ -5,4 +5,4 @@ export const QUANTUMAUTH_ALLOWED_HEADERS = [
 ] as const;
 
 export const QUANTUMAUTH_VERIFICATION_PATH: string = "/quantum-auth/v1/auth/verify";
-export const QUANTUMAUTH_SERVER_URL: string = "http://localhost:1042";
+export const QUANTUMAUTH_SERVER_URL: string = "https://api.quantumauth.io";

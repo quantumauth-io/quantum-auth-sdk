@@ -1,5 +1,4 @@
 // src/extensionBridge.ts
-var cachedExtensionAvailable = null;
 function qaRequest(payload, timeoutMs = 15e3) {
   if (typeof window === "undefined") {
     return Promise.reject(
@@ -14,6 +13,7 @@ function qaRequest(payload, timeoutMs = 15e3) {
     }, timeoutMs);
     function onMessage(event) {
       const msg = event.data;
+      console.log("Received response from QuantumAuth extension:", msg);
       if (!msg || msg.type !== "QUANTUMAUTH_RESPONSE" || msg.correlationId !== correlationId) {
         return;
       }
@@ -30,6 +30,7 @@ function qaRequest(payload, timeoutMs = 15e3) {
       }
     }
     window.addEventListener("message", onMessage);
+    console.log("Sending request to QuantumAuth extension:", payload);
     window.postMessage(
       {
         type: "QUANTUMAUTH_REQUEST",
@@ -39,24 +40,6 @@ function qaRequest(payload, timeoutMs = 15e3) {
       "*"
     );
   });
-}
-async function isQuantumAuthExtensionAvailable(timeoutMs = 1e3) {
-  if (typeof window === "undefined") {
-    return false;
-  }
-  if (cachedExtensionAvailable !== null) {
-    return cachedExtensionAvailable;
-  }
-  try {
-    await qaRequest(
-      { action: "ping" },
-      timeoutMs
-    );
-    cachedExtensionAvailable = true;
-  } catch {
-    cachedExtensionAvailable = false;
-  }
-  return cachedExtensionAvailable;
 }
 
 // src/index.ts
@@ -105,12 +88,6 @@ var QuantumAuthWebClient = class {
         "QuantumAuthWebClient.requestChallenge must run in a browser"
       );
     }
-    const hasExtension = await isQuantumAuthExtensionAvailable();
-    if (!hasExtension) {
-      throw new Error(
-        "QuantumAuth browser extension not detected. Please install the QuantumAuth extension to use protected requests."
-      );
-    }
     const resp = await qaRequest({
       action: "request_challenge",
       data: {
@@ -120,7 +97,9 @@ var QuantumAuthWebClient = class {
         appId: this.appId
       }
     });
+    console.log("QuantumAuth challenge response:", resp);
     const qaProof = resp.qaProof ?? resp.data?.qaProof ?? {};
+    console.log("QuantumAuth challenge response:", qaProof);
     return {
       qaProof
     };

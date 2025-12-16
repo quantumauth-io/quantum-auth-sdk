@@ -86,13 +86,13 @@ export class QuantumAuthWebClient {
                 "QuantumAuthWebClient.requestChallenge must run in a browser",
             );
         }
-
-        const hasExtension = await isQuantumAuthExtensionAvailable();
-        if (!hasExtension) {
-            throw new Error(
-                "QuantumAuth browser extension not detected. Please install the QuantumAuth extension to use protected requests.",
-            );
-        }
+// todo move this outside of the request.
+        // const hasExtension = await isQuantumAuthExtensionAvailable();
+        // if (!hasExtension) {
+        //     throw new Error(
+        //         "QuantumAuth browser extension not detected. Please install the QuantumAuth extension to use protected requests.",
+        //     );
+        // }
 
         const resp = await qaRequest<{
             qaProof?: Record<string, string>;
@@ -106,11 +106,13 @@ export class QuantumAuthWebClient {
                 appId: this.appId,
             },
         });
-
+console.log("QuantumAuth challenge response:", resp);
         const qaProof =
             resp.qaProof ??
             resp.data?.qaProof ??
             {};
+
+        console.log("QuantumAuth challenge response:", qaProof);
 
         return {
             qaProof,

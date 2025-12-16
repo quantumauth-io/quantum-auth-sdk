@@ -547,7 +547,7 @@ describe("createExpressQuantumAuthMiddleware", () => {
         expect(res.body).toEqual({
             error: "QuantumAuth authentication failed",
         });
-        expect(req.userId).toBeNull();
+        expect(req.userId).toBeUndefined();
         expect(next).not.toHaveBeenCalled();
     });
 

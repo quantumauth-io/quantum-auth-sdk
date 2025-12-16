@@ -33,10 +33,11 @@ export interface QuantumAuthContext {
 
 // Express request shape after QuantumAuth middleware
 export interface QuantumAuthRequest extends Request {
-    userId?: string | null;
+    userId?: string;
     quantumAuth?: QuantumAuthContext;
     qa?: QuantumAuthContext;
 }
+
 
 type VerifyResponseBody = {
     authenticated?: boolean;
@@ -157,10 +158,10 @@ export function createExpressQuantumAuthMiddleware(
                 path,
                 headers: incomingHeaders,
             };
-
+            console.log("QuantumAuth verify request:", verifyPayload);
             const result = await verifyRequestWithServer(cfg, verifyPayload);
 
-            req.userId = result.authenticated ? result.userId ?? null : null;
+            req.userId = result.authenticated && result.userId ? result.userId : undefined;
 
             const userId = result.userId;
 

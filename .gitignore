@@ -8,3 +8,4 @@
 
 /examples/next-demo/.next/
 /coverage/
+/packages/node/dist/

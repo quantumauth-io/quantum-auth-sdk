@@ -5,6 +5,7 @@ import cors from "cors";
 import {
     createExpressQuantumAuthMiddleware,
     QUANTUMAUTH_ALLOWED_HEADERS,
+    QuantumAuthRequest
 } from "@quantumauth/node";
 
 const app = express();
@@ -47,7 +48,7 @@ app.get("/health", (_req, res) => {
 });
 
 
-app.post("/qa/demo", qaMiddleware, (req: Request, res : Response) => {
+app.post("/qa/demo", qaMiddleware, (req: QuantumAuthRequest, res : Response) => {
 
     res.json({
         userId: req.userId,

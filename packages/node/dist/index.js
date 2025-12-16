@@ -5,7 +5,7 @@ var QUANTUMAUTH_ALLOWED_HEADERS = [
   "X-QuantumAuth-Canonical-B64"
 ];
 var QUANTUMAUTH_VERIFICATION_PATH = "/quantum-auth/v1/auth/verify";
-var QUANTUMAUTH_SERVER_URL = "http://localhost:1042";
+var QUANTUMAUTH_SERVER_URL = "https://api.quantumauth.io";
 
 // src/index.ts
 async function verifyRequestWithServer(cfg, input) {
@@ -29,27 +29,29 @@ async function verifyRequestWithServer(cfg, input) {
       signal: controller.signal
     });
     const text = await res.text();
-    let json = null;
+    let json;
     try {
       json = text ? JSON.parse(text) : null;
     } catch {
       json = null;
     }
     if (!res.ok) {
+      const errorMessage = json?.error ?? `QA server verify failed: HTTP ${res.status} ${res.statusText}`;
       return {
         authenticated: false,
-        error: json?.error ?? `QA server verify failed: HTTP ${res.status} ${res.statusText}`
+        error: errorMessage
       };
     }
     return {
-      authenticated: !!json?.authenticated,
-      userId: json?.user_id ?? json?.userId
-      // payload: json?.payload ?? json?.data, // for future encryption
+      authenticated: Boolean(json?.authenticated),
+      userId: json?.user_id ?? json?.userId,
+      payload: json?.payload ?? json?.data
     };
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     return {
       authenticated: false,
-      error: String(err?.message ?? err)
+      error: message
     };
   } finally {
     clearTimeout(timeout);
@@ -59,16 +61,16 @@ function createExpressQuantumAuthMiddleware(cfg) {
   return async function quantumAuthMiddleware(req, res, next) {
     try {
       const encrypted = req.body;
-      if (!encrypted) {
+      if (encrypted == null) {
         res.status(400).json({ error: "Missing request body for QuantumAuth" });
         return;
       }
       const method = req.method;
       const path = req.originalUrl || req.url || "";
       const incomingHeaders = {};
-      const rawHeaders = req.headers || {};
+      const rawHeaders = req.headers ?? {};
       for (const [key, value] of Object.entries(rawHeaders)) {
-        if (!value) continue;
+        if (value == null) continue;
         const lower = key.toLowerCase();
         if (lower === "authorization" || lower.startsWith("x-quantumauth-") || lower === "x-qa-signature") {
           incomingHeaders[key] = Array.isArray(value) ? value.join(",") : String(value);
@@ -79,16 +81,18 @@ function createExpressQuantumAuthMiddleware(cfg) {
         path,
         headers: incomingHeaders
       };
+      console.log("QuantumAuth verify request:", verifyPayload);
       const result = await verifyRequestWithServer(cfg, verifyPayload);
-      req.userId = result.authenticated ? result.userId : null;
-      if (!result.authenticated || !result.userId) {
+      req.userId = result.authenticated && result.userId ? result.userId : void 0;
+      const userId = result.userId;
+      if (!result.authenticated || !userId) {
         res.status(401).json({
           error: result.error ?? "QuantumAuth authentication failed"
         });
         return;
       }
       const ctx = {
-        userId: result.userId,
+        userId,
         payload: result.payload
       };
       req.quantumAuth = ctx;
@@ -96,9 +100,12 @@ function createExpressQuantumAuthMiddleware(cfg) {
       if (result.payload !== void 0) {
         req.body = result.payload;
       }
-      return next();
+      next();
     } catch (err) {
-      res.status(500).json({ error: `QuantumAuth middleware error: ${String(err)}` });
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({
+        error: `QuantumAuth middleware error: ${message}`
+      });
     }
   };
 }
@@ -116,6 +123,7 @@ export {
   QUANTUMAUTH_SERVER_URL,
   QUANTUMAUTH_VERIFICATION_PATH,
   createExpressQuantumAuthMiddleware,
+  joinUrl,
   verifyRequestWithServer
 };
 //# sourceMappingURL=index.js.map
