@@ -12,17 +12,60 @@ QuantumAuth Node SDK — server-side authentication middleware.
 pnpm add @quantumauth/node
 ```
 
-## 🧩 Usage (Express)
+## Development
+
+is QA_ENV is not set in your environment it will default to prod.
+
+options are:
 
 ```ts
-import { createExpressQuantumAuthMiddleware } from "@quantumauth/node";
+QA_ENV=local   // for local development
+QA_ENV=develop // for develop environment (Official QA develop)
+```
+
+
+## 🧩 Usage (Express)
+
+imports
+
+```ts
+import {
+    createExpressQuantumAuthMiddleware,
+    QUANTUMAUTH_ALLOWED_HEADERS,
+    QuantumAuthRequest
+} from "@quantumauth/node";
+```
+Use middleware
+
+```ts
+app.post("/qa/demo", qaMiddleware, (req: QuantumAuthRequest, res : Response) => {
+
+    res.json({
+        userId: req.userId,  // middleware inject the authenticated user id in the request
+        body: req.body,
+    });
+});
+
 ```
 
 ## 🔐 CORS Allowed Headers
 
+The headers required to authenticate user with QA proof (TPM signatures)
+
 ```ts
-import { QUANTUMAUTH_ALLOWED_HEADERS } from "@quantumauth/node";
+app.use(cors({
+    origin: ["http://localhost:3000"], // address of the front end
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+        ...QUANTUMAUTH_ALLOWED_HEADERS
+    ],
+    credentials: true,
+}));
 ```
+
+## 📘 Docs
+
+[Read the documentation](https://docs.quantumauth.io) 
 
 ## 📝 License
 

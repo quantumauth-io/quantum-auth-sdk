@@ -2,6 +2,8 @@ import { Request, RequestHandler } from 'express';
 
 declare const QUANTUMAUTH_ALLOWED_HEADERS: readonly ["Content-Type", "Authorization", "X-QuantumAuth-Canonical-B64"];
 declare const QUANTUMAUTH_VERIFICATION_PATH: string;
+type QAEnv = "local" | "develop" | "production";
+declare const QA_ENV: QAEnv;
 declare const QUANTUMAUTH_SERVER_URL: string;
 
 interface QuantumAuthNodeConfig {
@@ -32,4 +34,4 @@ declare function verifyRequestWithServer(cfg: QuantumAuthNodeConfig, input: Veri
 declare function createExpressQuantumAuthMiddleware(cfg: QuantumAuthNodeConfig): RequestHandler;
 declare function joinUrl(base: string, path: string): string;
 
-export { QUANTUMAUTH_ALLOWED_HEADERS, QUANTUMAUTH_SERVER_URL, QUANTUMAUTH_VERIFICATION_PATH, type QuantumAuthContext, type QuantumAuthNodeConfig, type QuantumAuthRequest, type VerificationRequestPayload, type VerificationResponse, createExpressQuantumAuthMiddleware, joinUrl, verifyRequestWithServer };
+export { QA_ENV, QUANTUMAUTH_ALLOWED_HEADERS, QUANTUMAUTH_SERVER_URL, QUANTUMAUTH_VERIFICATION_PATH, type QuantumAuthContext, type QuantumAuthNodeConfig, type QuantumAuthRequest, type VerificationRequestPayload, type VerificationResponse, createExpressQuantumAuthMiddleware, joinUrl, verifyRequestWithServer };

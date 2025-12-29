@@ -20,6 +20,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
+  QA_ENV: () => QA_ENV,
   QUANTUMAUTH_ALLOWED_HEADERS: () => QUANTUMAUTH_ALLOWED_HEADERS,
   QUANTUMAUTH_SERVER_URL: () => QUANTUMAUTH_SERVER_URL,
   QUANTUMAUTH_VERIFICATION_PATH: () => QUANTUMAUTH_VERIFICATION_PATH,
@@ -36,7 +37,25 @@ var QUANTUMAUTH_ALLOWED_HEADERS = [
   "X-QuantumAuth-Canonical-B64"
 ];
 var QUANTUMAUTH_VERIFICATION_PATH = "/quantum-auth/v1/auth/verify";
-var QUANTUMAUTH_SERVER_URL = "https://api.quantumauth.io";
+function normalizeQAEnv(raw) {
+  const v = (raw ?? "").trim().toLowerCase();
+  switch (v) {
+    case "local":
+      return "local";
+    case "dev":
+    case "develop":
+    case "development":
+      return "develop";
+    case "":
+    case "prod":
+    case "production":
+      return "production";
+    default:
+      throw new Error(`Invalid QA_ENV "${raw}". Allowed: local, develop, production (or empty)`);
+  }
+}
+var QA_ENV = normalizeQAEnv(process.env.QA_ENV);
+var QUANTUMAUTH_SERVER_URL = process.env.QUANTUMAUTH_SERVER_URL?.trim() && process.env.QUANTUMAUTH_SERVER_URL.trim() || (QA_ENV === "local" ? "http://localhost:1042" : QA_ENV === "develop" ? "https://dev.api.quantumauth.io" : "https://api.quantumauth.io");
 
 // src/index.ts
 async function verifyRequestWithServer(cfg, input) {
@@ -112,7 +131,6 @@ function createExpressQuantumAuthMiddleware(cfg) {
         path,
         headers: incomingHeaders
       };
-      console.log("QuantumAuth verify request:", verifyPayload);
       const result = await verifyRequestWithServer(cfg, verifyPayload);
       req.userId = result.authenticated && result.userId ? result.userId : void 0;
       const userId = result.userId;
@@ -151,6 +169,7 @@ function joinUrl(base, path) {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  QA_ENV,
   QUANTUMAUTH_ALLOWED_HEADERS,
   QUANTUMAUTH_SERVER_URL,
   QUANTUMAUTH_VERIFICATION_PATH,

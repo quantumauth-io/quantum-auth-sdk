@@ -106,13 +106,11 @@ export class QuantumAuthWebClient {
                 appId: this.appId,
             },
         });
-console.log("QuantumAuth challenge response:", resp);
+
         const qaProof =
             resp.qaProof ??
             resp.data?.qaProof ??
             {};
-
-        console.log("QuantumAuth challenge response:", qaProof);
 
         return {
             qaProof,

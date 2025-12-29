@@ -158,7 +158,7 @@ export function createExpressQuantumAuthMiddleware(
                 path,
                 headers: incomingHeaders,
             };
-            console.log("QuantumAuth verify request:", verifyPayload);
+
             const result = await verifyRequestWithServer(cfg, verifyPayload);
 
             req.userId = result.authenticated && result.userId ? result.userId : undefined;

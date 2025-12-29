@@ -1,6 +1,6 @@
 {
   "name": "@quantumauth/web",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "QuantumAuth browser SDK",
   "license": "Apache-2.0",
   "type": "module",
@@ -21,6 +21,7 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
