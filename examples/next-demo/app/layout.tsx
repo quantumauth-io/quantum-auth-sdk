@@ -1,19 +1,18 @@
-import '@rainbow-me/rainbowkit/styles.css';
-import { Web3Provider } from '@/providers/Web3Provider';
+"use client";
 
-export const metadata = {
-  title: 'QuantumAuth Demo',
-  description: 'Demo using QuantumAuth',
-}
+import { QAProvider } from "@quantumauth/privacy-connector/react";
+
 
 export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
+                                     children,
+                                   }: {
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body><Web3Provider>{children}</Web3Provider></body>
-    </html>
-  )
+      <html lang="en">
+      <body>
+      <QAProvider>{children}</QAProvider>
+      </body>
+      </html>
+  );
 }
