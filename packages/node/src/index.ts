@@ -123,35 +123,29 @@ export function createExpressQuantumAuthMiddleware(
         next: NextFunction,
     ): Promise<void> {
         try {
-            const encrypted = req.body;
-
-            if (encrypted == null) {
-                res
-                    .status(400)
-                    .json({ error: "Missing request body for QuantumAuth" });
-                return;
-            }
 
             const method = req.method;
-            const path = req.originalUrl || req.url || "";
+            const path = req.originalUrl;
 
             const incomingHeaders: Record<string, string> = {};
             const rawHeaders = req.headers ?? {};
 
-            for (const [key, value] of Object.entries(rawHeaders)) {
-                if (value == null) continue;
+            const pick = (name: string) => {
+                const v = rawHeaders[name.toLowerCase()];
+                if (v == null) return;
+                incomingHeaders[name] = Array.isArray(v) ? v.join(",") : String(v);
+            };
 
-                const lower = key.toLowerCase();
-                if (
-                    lower === "authorization" ||
-                    lower.startsWith("x-quantumauth-") ||
-                    lower === "x-qa-signature"
-                ) {
-                    incomingHeaders[key] = Array.isArray(value)
-                        ? value.join(",")
-                        : String(value);
-                }
-            }
+
+            pick("Authorization");
+            pick("X-QA-App-Id");
+            pick("X-QA-Aud");
+            pick("X-QA-Ts");
+            pick("X-QA-Challenge-Id");
+            pick("X-QA-User-Id");
+            pick("X-QA-Device-Id");
+            pick("X-QA-Body-Sha256");
+            pick("X-QA-Sig-Ver");
 
             const verifyPayload: VerificationRequestPayload = {
                 method,

@@ -1,6 +1,6 @@
 import { Request, RequestHandler } from 'express';
 
-declare const QUANTUMAUTH_ALLOWED_HEADERS: readonly ["Content-Type", "Authorization", "X-QuantumAuth-Canonical-B64"];
+declare const QUANTUMAUTH_ALLOWED_HEADERS: readonly ["Content-Type", "Authorization", "X-QA-App-Id", "X-QA-Aud", "X-QA-Ts", "X-QA-Challenge-Id", "X-QA-User-Id", "X-QA-Device-Id", "X-QA-Body-Sha256", "X-QA-Sig-Ver"];
 declare const QUANTUMAUTH_VERIFICATION_PATH: string;
 type QAEnv = "local" | "develop" | "production";
 declare const QA_ENV: QAEnv;

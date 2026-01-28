@@ -39,10 +39,11 @@ export class QuantumAuthWebClient {
         const challenge = await this.requestChallenge({
             method: opts.method,
             path: opts.path,
-            backendHost: this.extractHost(this.backendBaseUrl),
+            backendHost: this.normalizeBackendHost(this.backendBaseUrl),
         });
 
         const url = this.backendBaseUrl + opts.path;
+        console.log("url", url)
 
         const headers = new Headers({
             "Content-Type": "application/json",
@@ -117,12 +118,27 @@ export class QuantumAuthWebClient {
         };
     }
 
-    private extractHost(url: string): string {
+    private  normalizeBackendHost(input: string): string {
+        const s = String(input || "").trim();
+        if (!s) return "";
+
+        // Ensure URL() can parse it; add scheme if missing.
+        const withScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s) ? s : `http://${s}`;
+
+        let u: URL;
         try {
-            const u = new URL(url);
-            return u.host;
+            u = new URL(withScheme);
         } catch {
-            return url.replace(/^https?:\/\//, "").split("/")[0];
+            // last resort: take first token before '/' and strip scheme-like prefix
+            const raw = s.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, "").split("/")[0].trim();
+            return raw.toLowerCase();
         }
+
+        const host = u.hostname.trim().toLowerCase(); // no port
+        let port = u.port ? String(u.port).trim() : "";
+
+        if (port === "80" || port === "443") port = "";
+
+        return port ? `${host}:${port}` : host;
     }
 }

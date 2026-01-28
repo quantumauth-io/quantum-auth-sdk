@@ -55,7 +55,7 @@ var QuantumAuthWebClient = class {
     const challenge = await this.requestChallenge({
       method: opts.method,
       path: opts.path,
-      backendHost: this.extractHost(this.backendBaseUrl)
+      backendHost: this.normalizeBackendHost(this.backendBaseUrl)
     });
     const url = this.backendBaseUrl + opts.path;
     const headers = new Headers({
@@ -111,13 +111,21 @@ var QuantumAuthWebClient = class {
       qaProof
     };
   }
-  extractHost(url) {
+  normalizeBackendHost(input) {
+    const s = String(input || "").trim();
+    if (!s) return "";
+    const withScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s) ? s : `http://${s}`;
+    let u;
     try {
-      const u = new URL(url);
-      return u.host;
+      u = new URL(withScheme);
     } catch {
-      return url.replace(/^https?:\/\//, "").split("/")[0];
+      const raw = s.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, "").split("/")[0].trim();
+      return raw.toLowerCase();
     }
+    const host = u.hostname.trim().toLowerCase();
+    let port = u.port ? String(u.port).trim() : "";
+    if (port === "80" || port === "443") port = "";
+    return port ? `${host}:${port}` : host;
   }
 };
 export {

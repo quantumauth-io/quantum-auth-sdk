@@ -20,7 +20,7 @@ declare class QuantumAuthWebClient {
     constructor(cfg: QuantumAuthWebConfig);
     request<TResp = unknown, TBody = unknown>(opts: ProtectedCallOptions<TBody>): Promise<ProtectedCallResult<TResp>>;
     private requestChallenge;
-    private extractHost;
+    private normalizeBackendHost;
 }
 
 export { type ProtectedCallOptions, type ProtectedCallResult, QuantumAuthWebClient, type QuantumAuthWebConfig };

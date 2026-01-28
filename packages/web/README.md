@@ -22,6 +22,18 @@ pnpm add @quantumauth/web
 import { createQuantumAuthClient } from "@quantumauth/web";
 ```
 
+## 💻 Develop
+
+⚠️ Important:
+
+```QA_ENV=local``` → local development
+
+```QA_ENV=dev``` → development environment
+
+```(unset)``` → production
+
+📚 Docs: https://docs.quantumauth.io/
+
 ## 📝 License
 
 Apache 2.0.

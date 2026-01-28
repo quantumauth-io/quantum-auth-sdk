@@ -8,7 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@quantumauth/privacy-connector": "^0.0.1",
+    "@quantumauth/privacy-connector": "file:../../../privacy-connector",
     "@quantumauth/web": "workspace:*",
     "next": "16.1.1",
     "react": "18.3.1",

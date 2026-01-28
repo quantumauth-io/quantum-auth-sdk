@@ -11,7 +11,9 @@ export default function RootLayout({
   return (
       <html lang="en">
       <body>
-      <QAProvider>{children}</QAProvider>
+      <QAProvider appId="3f0600f8-b915-4d60-b859-38d77b2511f7">
+          {children}
+      </QAProvider>
       </body>
       </html>
   );

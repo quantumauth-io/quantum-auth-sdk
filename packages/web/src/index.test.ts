@@ -61,7 +61,7 @@ describe("QuantumAuthWebClient.requestChallenge error paths", () => {
         }
 
         try {
-            await expect(
+           expect(
                 client["requestChallenge"]({
                     method: "GET",
                     path: "/qa/demo",
@@ -89,7 +89,7 @@ describe("QuantumAuthWebClient.requestChallenge error paths", () => {
 
         (isQuantumAuthExtensionAvailable as unknown as Mock).mockResolvedValueOnce(false);
 
-        await expect(
+        expect(
 
             client["requestChallenge"]({
                 method: "POST",
@@ -157,7 +157,7 @@ describe("QuantumAuthWebClient.requestChallenge", () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const requestChallenge = (client as any).requestChallenge.bind(client);
 
-        await expect(
+        expect(
             requestChallenge({
                 method: "POST",
                 path: "/qa/demo",
@@ -179,7 +179,7 @@ describe("QuantumAuthWebClient.requestChallenge", () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const requestChallenge = (client as any).requestChallenge.bind(client);
 
-        await expect(
+        expect(
             requestChallenge({
                 method: "POST",
                 path: "/qa/demo",

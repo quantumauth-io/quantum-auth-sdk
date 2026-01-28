@@ -1,7 +1,14 @@
 export const QUANTUMAUTH_ALLOWED_HEADERS = [
     "Content-Type",
     "Authorization",
-    "X-QuantumAuth-Canonical-B64"
+    "X-QA-App-Id",
+    "X-QA-Aud",
+    "X-QA-Ts",
+    "X-QA-Challenge-Id",
+    "X-QA-User-Id",
+    "X-QA-Device-Id",
+    "X-QA-Body-Sha256",
+    "X-QA-Sig-Ver",
 ] as const;
 
 export const QUANTUMAUTH_VERIFICATION_PATH: string = "/quantum-auth/v1/auth/verify";

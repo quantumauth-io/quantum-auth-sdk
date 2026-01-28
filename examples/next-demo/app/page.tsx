@@ -5,8 +5,8 @@ import { QAConnectButton, useQA } from "@quantumauth/privacy-connector/react";
 import { QuantumAuthWebClient } from "@quantumauth/web";
 
 const qaClient = new QuantumAuthWebClient({
-    backendBaseUrl: "http://localhost:4000",
-    appId: "next-demo",
+    backendBaseUrl: "http://node.dev.local:4000",
+    appId: "3f0600f8-b915-4d60-b859-38d77b2511f7",
 });
 
 type DemoResponse = {
