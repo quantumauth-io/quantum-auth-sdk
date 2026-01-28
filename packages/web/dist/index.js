@@ -58,6 +58,7 @@ var QuantumAuthWebClient = class {
       backendHost: this.normalizeBackendHost(this.backendBaseUrl)
     });
     const url = this.backendBaseUrl + opts.path;
+    console.log("url", url);
     const headers = new Headers({
       "Content-Type": "application/json"
     });
